@@ -47,7 +47,7 @@ export function NavUser({ user }: { user: User }) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.displayName}</span>
+                  <span className="truncate font-medium">{user.displayName} - SooTestOpenDialog</span>
                   <span className="truncate text-xs">{user.username}</span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
@@ -58,6 +58,7 @@ export function NavUser({ user }: { user: User }) {
               side={isMobile ? "bottom" : "right"}
               align="end"
               sideOffset={4}
+              style={{ position: "absolute", }} //mặc định nằm trên, hiện tại đang lỗi 
             >
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
@@ -78,11 +79,17 @@ export function NavUser({ user }: { user: User }) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem onClick={() => setProfileOpen(true)}>
+                <DropdownMenuItem onSelect={(e) => {
+                  e.preventDefault();
+                  setTimeout(() => setProfileOpen(true), 0);
+                }}>
                   <UserIcon className="text-muted-foreground dark:group-focus:!text-accent-foreground" />
                   Tài Khoản
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setfriendRequestOpen(true)}>
+                <DropdownMenuItem onSelect={(e) => {
+                  e.preventDefault();
+                  setTimeout(() => setfriendRequestOpen(true), 0);
+                }}>
                   <Bell className="text-muted-foreground dark:group-focus:!text-accent-foreground" />
                   Thông Báo
                 </DropdownMenuItem>
