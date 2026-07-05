@@ -1,0 +1,187 @@
+name: CD Pipeline
+
+# Trigger khi merge PR vào main hoặc push thẳng vào main
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]   # phải khớp chính xác với name: trong ci.yml
+    types: [completed]
+    branches: [main]
+
+jobs:
+  # ============================================================
+  # JOB 1: Build image và push lên DockerHub
+  # ============================================================
+  push-image:
+    runs-on: self-hosted-runner
+    # Chỉ chạy nếu ci.yml kết thúc với trạng thái success
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}   # dùng Access Token, không dùng password
+
+      # Tag image bằng commit SHA để trace được version nào đang chạy
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          dockerfile: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-backend:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          dockerfile: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-frontend:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
+          build-args: |
+            REACT_APP_API_URL=http://${{ secrets.SELF_HOSTED_RUNNER_IP }}:5001
+
+      # Rotate cache (tránh cache phình to theo thời gian)
+      - name: Rotate Docker build cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  # # ============================================================
+  # # JOB 2: SSH vào self-hosted-runner, pull image mới và restart
+  # # ============================================================
+  deploy:
+    runs-on: self-hosted-runner
+    needs: push-image   # chờ push-image xong mới deploy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to self-hosted-runner via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.SELF_HOSTED_RUNNER_IP }}     # IP của self-hosted-runner
+          username: ${{ secrets.SERVER_USER }}     # thường là "vagrant"
+          key:      ${{ secrets.SELF_HOSTED_RUNNER_SSH_KEY }}  # private key để SSH vào
+          script: |
+            cd ~/app
+
+            # Ghi biến môi trường vào .env trên server
+            echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" > .env
+            echo "IMAGE_TAG=${{ github.sha }}"                         >> .env
+            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}"              >> .env
+
+            # Pull image mới nhất và restart container
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            # Xóa image cũ không còn dùng
+            docker image prune -f
+
+      - name: Wait for app to be ready
+        run: sleep 15   # chờ container khởi động xong trước khi scan
+
+  # # ============================================================
+  # # JOB 3: DAST — ZAP scan ứng dụng sau khi deploy
+  # # ============================================================
+  dast-scan:
+    runs-on: self-hosted-runner
+    needs: deploy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ZAP Baseline: scan nhanh các lỗ hổng cơ bản (passive scan)
+      # Không break pipeline nếu chỉ có warning (chỉ fail khi có lỗi thật)
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.15.0   
+        with:
+          token:       ${{ secrets.GITHUB_TOKEN }}          
+          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'     
+          target:      'http://${{ secrets.SELF_HOSTED_RUNNER_IP }}:5173'  
+          fail_action: false                                 
+          cmd_options: '-a'
+
+      - name: Upload ZAP HTML report
+        uses: actions/upload-artifact@v4
+        if: always()   # upload kể cả khi scan fail
+        with:
+          name: zap-report-${{ github.sha }}
+          path: report_html.html
+
+  # # ============================================================
+  # # JOB 4: Performance test bằng K6
+  # # ============================================================
+  performance-test:
+    runs-on: self-hosted-runner
+    needs: dast-scan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Cài K6 nếu chưa có trên runner (chỉ cài lần đầu, lần sau bỏ qua)
+      - name: Install K6
+        run: |
+          if ! command -v k6 &> /dev/null; then
+            curl -L https://github.com/grafana/k6/releases/download/v0.51.0/k6-v0.51.0-linux-amd64.tar.gz \
+              | tar xvz
+            sudo mv k6-v0.51.0-linux-amd64/k6 /usr/local/bin/k6
+          fi
+
+      - name: Run K6 load test
+        run: |
+          k6 run k6/load-test.js \
+            --out json=k6-results.json \
+            -e BASE_URL=http://${{ secrets.SELF_HOSTED_RUNNER_IP }}:5173
+        continue-on-error: true  # không fail pipeline nếu perf chưa đạt ngưỡng
+
+      - name: Upload K6 results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-results-${{ github.sha }}
+          path: k6-results.json
+
+  # # ============================================================
+  # # JOB 5: Cleanup — dọn dẹp sau khi pipeline xong
+  # # if: always() = chạy dù các job trên pass hay fail
+  # # ============================================================
+  cleanup:
+    runs-on: self-hosted-runner
+    needs: [push-image, deploy, dast-scan, performance-test]
+    if: always()
+
+    steps:
+      - name: Remove backend/frontend containers
+        run: |
+          docker rm -f chatApp-backend || true
+          docker rm -f chatApp-frontend || true
+
+      - name: Remove backend/frontend images
+        run: |
+          docker rmi chatApp-backend:latest || true
+          docker rmi chatApp-frontend:latest || true
+
+      - name: Remove temp files
+        run: |
+          rm -f k6-results.json
+          rm -f report_html.html
+          rm -f /tmp/.buildx-cache-new -rf
