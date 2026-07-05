@@ -1,0 +1,32 @@
+# Dependencies
+node_modules
+
+# Build output local
+build
+dist
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+nginx.conf
+
+# Môi trường local
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode
+.idea
+*.swp
+
+# Test
+coverage

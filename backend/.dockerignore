@@ -1,0 +1,35 @@
+# Dependencies (sẽ được cài lại trong image)
+node_modules
+
+# Build output local
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Môi trường local (KHÔNG đưa .env vào image)
+.env
+.env.*
+!.env.example
+
+# Test files (không cần trong production)
+**/*.test.js
+**/*.spec.js
+**/__tests__
+coverage
+
+# Editor
+.vscode
+.idea
+*.swp
