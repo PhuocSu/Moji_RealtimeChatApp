@@ -1,0 +1,128 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  source-code-analysis:
+    name: Source Code Analysis
+    runs-on: self-hosted-runner
+    env:
+      SONARQUBE_URL: ${{ secrets.SONAR_HOST_URL }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      PROJECT_NAME: Moji_RealtimeChatApp
+      PROJECT_KEY: PhuocSu_Moji_RealtimeChatApp_26ee018d-c035-4122-96a6-27550766bd7f
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SonarQube scan (SAST/Code quality)
+        run: |
+          # chạy container SonarQube nếu chưa có
+          if [ "$(docker ps -q -f name=sonarqube)" ]; then
+            echo "SonarQube is already running."
+          else
+            echo "SonarQube is not running. Starting SonarQube..."
+            docker run -d --name sonarqube -p 9000:9000 sonarqube
+          fi
+
+          # chạy sonar-scanner-cli
+          docker run --rm \
+            -v $(pwd):/project \
+            --workdir="/project" \
+            sonarsource/sonar-scanner-cli sonar-scanner \
+            -Dsonar.host.url="$SONARQUBE_URL" \
+            -Dsonar.login="$SONAR_TOKEN" \
+            -Dsonar.projectKey="$PROJECT_KEY" \
+            -Dsonar.projectName="$PROJECT_NAME" \
+            -Dsonar.sources="." \
+            -Dsonar.projectVersion="V1.0.0"
+
+      - name: Snyk scan (dependencies vulnerabilities)
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --severity-threshold=high
+
+      - name: Upload Snyk results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: success() || failure()
+        with:
+          sarif_file: snyk.sarif
+
+  build-image:
+    name: Build Docker Image
+    needs: source-code-analysis          # ← chờ source-code-analysis xong mới chạy
+    runs-on: self-hosted-runner
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      - uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      #Dùng ${{ github.sha }} giúp bạn trace được image build từ 
+      #commit nào → rất hữu ích khi deploy.
+      - name: Build backend image
+        run: docker build -t backend:${{ github.sha }} -t backend:latest ./backend
+
+      - name: Build frontend image
+        run: docker build -t frontend:${{ github.sha }} -t frontend:latest ./frontend
+
+  image-scan:
+    name: Scan build Docker image 
+    needs: build-image         # ← chờ build-image xong mới chạy
+    runs-on: self-hosted-runner
+    steps:
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          # Image to scan (use commit SHA for traceability)
+          image-ref: 'backend:${{ github.sha }}'
+          # Output format for GitHub Security tab integration
+          format: 'sarif'
+          output: 'trivy-backend.sarif'
+          # Only fail on HIGH and CRITICAL vulnerabilities
+          severity: 'HIGH,CRITICAL'
+          # Ignore vulnerabilities without fixes
+          ignore-unfixed: true
+
+      # Upload results to GitHub Security tab
+      - name: Upload backend scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-backend.sarif'
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          # Image to scan (use commit SHA for traceability)
+          image-ref: 'frontend:${{ github.sha }}'
+          # Output format for GitHub Security tab integration
+          format: 'sarif'
+          output: 'trivy-frontend.sarif'
+          # Only fail on HIGH and CRITICAL vulnerabilities
+          severity: 'HIGH,CRITICAL'
+          # Ignore vulnerabilities without fixes
+          ignore-unfixed: true
+
+      # Upload results to GitHub Security tab
+      - name: Upload frontend scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-frontend.sarif'
+  
+
+      
