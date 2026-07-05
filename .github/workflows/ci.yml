@@ -7,6 +7,9 @@ on:
     branches: [main]
 
 jobs:
+  # ============================================================
+  # JOB 1: Sonarqube scan (SAST/Code quality) + Snyk scan (dependencies vulnerabilities)
+  # ============================================================
   source-code-analysis:
     name: Source Code Analysis
     runs-on: self-hosted-runner
@@ -53,7 +56,9 @@ jobs:
         if: success() || failure()
         with:
           sarif_file: snyk.sarif
-
+  # ============================================================
+  # JOB 2: Build image
+  # ============================================================        
   build-image:
     name: Build Docker Image
     needs: source-code-analysis          # ← chờ source-code-analysis xong mới chạy
@@ -76,11 +81,13 @@ jobs:
       #Dùng ${{ github.sha }} giúp bạn trace được image build từ 
       #commit nào → rất hữu ích khi deploy.
       - name: Build backend image
-        run: docker build -t backend:${{ github.sha }} -t backend:latest ./backend
+        run: docker build -t chatApp-backend:${{ github.sha }} -t chatApp-backend:latest ./backend
 
       - name: Build frontend image
-        run: docker build -t frontend:${{ github.sha }} -t frontend:latest ./frontend
-
+        run: docker build -t chatApp-frontend:${{ github.sha }} -t chatApp-frontend:latest ./frontend
+  # ============================================================
+  # JOB 3: trivy scan image
+  # ============================================================
   image-scan:
     name: Scan build Docker image 
     needs: build-image         # ← chờ build-image xong mới chạy
@@ -90,7 +97,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           # Image to scan (use commit SHA for traceability)
-          image-ref: 'backend:${{ github.sha }}'
+          image-ref: 'chatApp-backend:${{ github.sha }}'
           # Output format for GitHub Security tab integration
           format: 'sarif'
           output: 'trivy-backend.sarif'
@@ -109,7 +116,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           # Image to scan (use commit SHA for traceability)
-          image-ref: 'frontend:${{ github.sha }}'
+          image-ref: 'chatApp-frontend:${{ github.sha }}'
           # Output format for GitHub Security tab integration
           format: 'sarif'
           output: 'trivy-frontend.sarif'
