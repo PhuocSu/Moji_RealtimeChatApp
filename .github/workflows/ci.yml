@@ -35,7 +35,7 @@ jobs:
             echo "SonarQube is already running."
           else
             echo "SonarQube is not running. Starting SonarQube..."
-            sudo docker run -d --name sonarqube -p 9000:9000 sonarqube
+            sudo docker start sonarqube
           fi
 
           # chạy sonar-scanner-cli
