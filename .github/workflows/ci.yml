@@ -13,6 +13,8 @@ jobs:
   source-code-analysis:
     name: Source Code Analysis
     runs-on: self-hosted
+    permissions:
+      security-events: write
     env:
       SONARQUBE_URL: ${{ secrets.SONAR_HOST_URL }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -20,6 +22,11 @@ jobs:
       PROJECT_KEY: PhuocSu_Moji_RealtimeChatApp_26ee018d-c035-4122-96a6-27550766bd7f
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: SonarQube scan (SAST/Code quality)
         run: |
@@ -44,15 +51,12 @@ jobs:
             -Dsonar.projectVersion="V1.0.0"
 
       - name: Snyk scan (dependencies vulnerabilities)
-        uses: snyk/actions/node@master
+        run: snyk test --severity-threshold=high --sarif-file-output=snyk.sarif
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --severity-threshold=high
 
       - name: Upload Snyk results to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: success() || failure()
         with:
           sarif_file: snyk.sarif
