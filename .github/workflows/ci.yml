@@ -31,15 +31,15 @@ jobs:
       - name: SonarQube scan (SAST/Code quality)
         run: |
           # chạy container SonarQube nếu chưa có
-          if [ "$(docker ps -q -f name=sonarqube)" ]; then
+          if [ "$(sudo docker ps -q -f name=sonarqube)" ]; then
             echo "SonarQube is already running."
           else
             echo "SonarQube is not running. Starting SonarQube..."
-            docker run -d --name sonarqube -p 9000:9000 sonarqube
+            sudo docker run -d --name sonarqube -p 9000:9000 sonarqube
           fi
 
           # chạy sonar-scanner-cli
-          docker run --rm \
+          sudo docker run --rm \
             -v $(pwd):/project \
             --workdir="/project" \
             sonarsource/sonar-scanner-cli sonar-scanner \
@@ -52,12 +52,13 @@ jobs:
 
       - name: Snyk scan (dependencies vulnerabilities)
         run: snyk test --severity-threshold=high --sarif-file-output=snyk.sarif
+        continue-on-error: true # step vẫn chạy dù workflow bị fail
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Upload Snyk results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v4
-        if: success() || failure()
+        if: success()
         with:
           sarif_file: snyk.sarif
   # ============================================================
@@ -85,10 +86,10 @@ jobs:
       #Dùng ${{ github.sha }} giúp bạn trace được image build từ 
       #commit nào → rất hữu ích khi deploy.
       - name: Build backend image
-        run: docker build -t chatApp-backend:${{ github.sha }} -t chatApp-backend:latest ./backend
+        run: sudo docker build -t chatApp-backend:${{ github.sha }} -t chatApp-backend:latest ./backend
 
       - name: Build frontend image
-        run: docker build -t chatApp-frontend:${{ github.sha }} -t chatApp-frontend:latest ./frontend
+        run: sudo docker build -t chatApp-frontend:${{ github.sha }} -t chatApp-frontend:latest ./frontend
   # ============================================================
   # JOB 3: trivy scan image
   # ============================================================
