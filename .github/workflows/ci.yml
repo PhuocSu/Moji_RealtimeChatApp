@@ -51,14 +51,16 @@ jobs:
             -Dsonar.projectVersion="V1.0.0"
 
       - name: Snyk scan (dependencies vulnerabilities)
-        run: snyk test --severity-threshold=high --sarif-file-output=snyk.sarif
-        continue-on-error: true # step vẫn chạy dù workflow bị fail
+        uses: snyk/actions/node@master
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v4
-        if: success()
+        if: always()
         with:
           sarif_file: snyk.sarif
   # ============================================================
