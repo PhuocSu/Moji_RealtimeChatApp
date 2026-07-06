@@ -12,7 +12,7 @@ jobs:
   # ============================================================
   source-code-analysis:
     name: Source Code Analysis
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     env:
       SONARQUBE_URL: ${{ secrets.SONAR_HOST_URL }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -62,7 +62,7 @@ jobs:
   build-image:
     name: Build Docker Image
     needs: source-code-analysis          # ← chờ source-code-analysis xong mới chạy
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -91,7 +91,7 @@ jobs:
   image-scan:
     name: Scan build Docker image 
     needs: build-image         # ← chờ build-image xong mới chạy
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     steps:
       - name: Scan backend image
         uses: aquasecurity/trivy-action@master

@@ -12,7 +12,7 @@ jobs:
   # JOB 1: Build image và push lên DockerHub
   # ============================================================
   push-image:
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     # Chỉ chạy nếu ci.yml kết thúc với trạng thái success
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
@@ -66,7 +66,7 @@ jobs:
   # # JOB 2: SSH vào self-hosted-runner, pull image mới và restart
   # # ============================================================
   deploy:
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     needs: push-image   # chờ push-image xong mới deploy
 
     steps:
@@ -101,7 +101,7 @@ jobs:
   # # JOB 3: DAST — ZAP scan ứng dụng sau khi deploy
   # # ============================================================
   dast-scan:
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     needs: deploy
 
     steps:
@@ -130,7 +130,7 @@ jobs:
   # # JOB 4: Performance test bằng K6
   # # ============================================================
   performance-test:
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     needs: dast-scan
 
     steps:
@@ -165,7 +165,7 @@ jobs:
   # # if: always() = chạy dù các job trên pass hay fail
   # # ============================================================
   cleanup:
-    runs-on: self-hosted-runner
+    runs-on: self-hosted
     needs: [push-image, deploy, dast-scan, performance-test]
     if: always()
 
