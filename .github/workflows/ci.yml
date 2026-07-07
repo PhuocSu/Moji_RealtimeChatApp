@@ -56,7 +56,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --sarif-file-output=snyk.sarif
+          args: --all-projects --severity-threshold=high --sarif-file-output=snyk.sarif
 
       - name: Debug - check sarif file exists
         if: always()
