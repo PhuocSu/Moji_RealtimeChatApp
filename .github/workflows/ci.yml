@@ -29,6 +29,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      
+      - name: Ensure SonarQube server is running
+        run: |
+          # chạy container SonarQube nếu chưa có
+          if [ "$(sudo docker ps -q -f name=sonarqube)" ]; then
+            echo "SonarQube is already running."
+          else
+            echo "SonarQube is not running. Starting SonarQube..."
+            sudo docker start sonarqube
+          fi
 
       - name: SonarQube scan (SAST/Code quality)
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
