@@ -72,10 +72,10 @@ jobs:
       #Dùng ${{ github.sha }} giúp bạn trace được image build từ 
       #commit nào → rất hữu ích khi deploy.
       - name: Build backend image
-        run: sudo docker build -t chatApp-backend:${{ github.sha }} -t chatApp-backend:latest ./backend
+        run: sudo docker build -t chatapp-backend:${{ github.sha }} -t chatapp-backend:latest ./backend
 
       - name: Build frontend image
-        run: sudo docker build -t chatApp-frontend:${{ github.sha }} -t chatApp-frontend:latest ./frontend
+        run: sudo docker build -t chatapp-frontend:${{ github.sha }} -t chatapp-frontend:latest ./frontend
   # ============================================================
   # JOB 3: trivy scan image
   # ============================================================
@@ -88,7 +88,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           # Image to scan (use commit SHA for traceability)
-          image-ref: 'chatApp-backend:${{ github.sha }}'
+          image-ref: 'chatapp-backend:${{ github.sha }}'
           # Output format for GitHub Security tab integration
           format: 'sarif'
           output: 'trivy-backend.sarif'
@@ -107,7 +107,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           # Image to scan (use commit SHA for traceability)
-          image-ref: 'chatApp-frontend:${{ github.sha }}'
+          image-ref: 'chatapp-frontend:${{ github.sha }}'
           # Output format for GitHub Security tab integration
           format: 'sarif'
           output: 'trivy-frontend.sarif'

@@ -37,8 +37,8 @@ jobs:
           dockerfile: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-backend:${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-backend:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -49,8 +49,8 @@ jobs:
           dockerfile: ./frontend/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-frontend:${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/chatApp-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-frontend:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
           build-args: |
@@ -172,13 +172,13 @@ jobs:
     steps:
       - name: Remove backend/frontend containers
         run: |
-          docker rm -f chatApp-backend || true
-          docker rm -f chatApp-frontend || true
+          docker rm -f chatapp-backend || true
+          docker rm -f chatapp-frontend || true
 
       - name: Remove backend/frontend images
         run: |
-          docker rmi chatApp-backend:latest || true
-          docker rmi chatApp-frontend:latest || true
+          docker rmi chatapp-backend:latest || true
+          docker rmi chatapp-frontend:latest || true
 
       - name: Remove temp files
         run: |
