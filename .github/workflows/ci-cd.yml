@@ -1,0 +1,305 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ============================================================
+  # JOB 1: Sonarqube scan (SAST/Code quality) + Snyk scan (dependencies vulnerabilities)
+  # ============================================================
+  source-code-analysis:
+    name: Source Code Analysis
+    runs-on: self-hosted
+    permissions:
+      security-events: write #nếu ghi result vào tab Security của repo
+    env:
+      SONARQUBE_URL: ${{ secrets.SONAR_HOST_URL }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      PROJECT_NAME: Moji_RealtimeChatApp
+      PROJECT_KEY: PhuocSu_Moji_RealtimeChatApp_26ee018d-c035-4122-96a6-27550766bd7f
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      
+      - name: Ensure SonarQube server is running
+        run: |
+          # chạy container SonarQube nếu chưa có
+          if [ "$(sudo docker ps -q -f name=sonarqube)" ]; then
+            echo "SonarQube is already running."
+          else
+            echo "SonarQube is not running. Starting SonarQube..."
+            sudo docker start sonarqube
+          fi
+
+      - name: SonarQube scan (SAST/Code quality)
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.PROJECT_NAME }}
+
+      - name: SonarQube Quality Gate check
+        uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Snyk scan (dependencies vulnerabilities)
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=high --sarif-file-output=snyk.sarif
+
+      - name: Upload Snyk results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+  # ============================================================
+  # JOB 2: Build image
+  # ============================================================        
+  build-image:
+    name: Build Docker Image
+    needs: source-code-analysis          # ← chờ source-code-analysis xong mới chạy
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      #Dùng ${{ github.sha }} giúp bạn trace được image build từ 
+      #commit nào → rất hữu ích khi deploy.
+      - name: Build backend image
+        run: sudo docker build -t chatapp-backend:${{ github.sha }} -t chatapp-backend:latest ./backend
+
+      - name: Build frontend image
+        run: sudo docker build -t chatapp-frontend:${{ github.sha }} -t chatapp-frontend:latest ./frontend
+  # ============================================================
+  # JOB 3: trivy scan image
+  # ============================================================
+  image-scan:
+    name: Scan build Docker image 
+    needs: build-image         # ← chờ build-image xong mới chạy
+    runs-on: self-hosted
+    permissions:
+      security-events: write #nếu ghi result vào tab Security của repo
+    steps:
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          # Image to scan (use commit SHA for traceability)
+          image-ref: 'chatapp-backend:${{ github.sha }}'
+          # Output format for GitHub Security tab integration
+          format: 'sarif'
+          output: 'trivy-backend.sarif'
+          # Only fail on HIGH and CRITICAL vulnerabilities
+          severity: 'HIGH,CRITICAL'
+          # Ignore vulnerabilities without fixes
+          ignore-unfixed: true
+
+      # Upload results to GitHub Security tab
+      - name: Upload Trivy backend scan results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-backend.sarif'
+          category: trivy-backend
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          # Image to scan (use commit SHA for traceability)
+          image-ref: 'chatapp-frontend:${{ github.sha }}'
+          # Output format for GitHub Security tab integration
+          format: 'sarif'
+          output: 'trivy-frontend.sarif'
+          # Only fail on HIGH and CRITICAL vulnerabilities
+          severity: 'HIGH,CRITICAL'
+          # Ignore vulnerabilities without fixes
+          ignore-unfixed: true
+
+      # Upload results to GitHub Security tab
+      - name: Upload Trivy frontend scan results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-frontend.sarif'
+          category: trivy-frontend
+        
+  # ============================================================
+  # JOB 4: Build image và push lên DockerHub
+  # ============================================================
+  push-image:
+    runs-on: self-hosted
+    needs: image-scan
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}   # dùng Access Token, không dùng password
+
+      # Tag image bằng commit SHA để trace được version nào đang chạy
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          dockerfile: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-backend:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          dockerfile: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-frontend:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
+          build-args: |
+            REACT_APP_API_URL=http://${{ secrets.SELF_HOSTED_RUNNER_IP }}:5001
+
+      # Rotate cache (tránh cache phình to theo thời gian)
+      - name: Rotate Docker build cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+  
+  # # ============================================================
+  # # JOB 5: SSH vào self-hosted-runner, pull image mới và restart
+  # # ============================================================
+  deploy:
+    name: Deploy application
+    runs-on: self-hosted
+    needs: push-image   # chờ push-image xong mới deploy
+
+    steps:
+      - name: Deploy via docker compose
+        run: |
+          cd ~/app
+
+          # Ghi biến môi trường vào .env
+          echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" > .env
+          echo "IMAGE_TAG=${{ github.sha }}"                         >> .env
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}"              >> .env
+
+          # Pull image mới nhất và restart container
+          docker compose pull
+          docker compose up -d --remove-orphans
+
+          # Xóa image cũ không còn dùng
+          docker image prune -f
+
+      - name: Wait for app to be ready
+        run: sleep 15   # chờ container khởi động xong trước khi scan
+      
+    # # ============================================================
+  # # JOB 3: DAST — ZAP scan ứng dụng sau khi deploy
+  # # ============================================================
+  dast-scan:
+    name: DAST Scan with ZAP
+    runs-on: self-hosted
+    needs: deploy
+    permissions:
+      contents: read
+      issues: write        # cần để ZAP action tạo/cập nhật issue báo cáo
+
+    steps:
+      # ZAP Baseline: scan nhanh các lỗ hổng cơ bản (passive scan)
+      # Không break pipeline nếu chỉ có warning (chỉ fail khi có lỗi thật)
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.15.0   
+        with:
+          token:       ${{ secrets.GITHUB_TOKEN }}          
+          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'     
+          target:      'http://${{ secrets.SELF_HOSTED_RUNNER_IP }}:5173'  
+          fail_action: false                                 
+          cmd_options: '-a'
+
+      - name: Upload ZAP HTML report
+        uses: actions/upload-artifact@v4
+        if: always()   # upload kể cả khi scan fail
+        with:
+          name: zap-report-${{ github.sha }}
+          path: report_html.html
+
+  # # ============================================================
+  # # JOB 4: Performance test bằng K6
+  # # ============================================================
+  performance-test:
+    name: Performance Test with K6
+    runs-on: self-hosted
+    needs: dast-scan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Cài K6 nếu chưa có trên runner (chỉ cài lần đầu, lần sau bỏ qua)
+      - name: Install K6
+        run: |
+          if ! command -v k6 &> /dev/null; then
+            curl -L https://github.com/grafana/k6/releases/download/v2.1.0/k6-v2.1.0-linux-amd64.tar.gz \
+              | tar xvz
+            sudo mv k6-v2.1.0-linux-amd64/k6 /usr/local/bin/k6
+            rm -rf k6-v2.1.0-linux-amd64
+          fi
+
+
+      - name: Run K6 load test
+        run: |
+          k6 run k6/load-test.js \
+            --out json=k6-results.json \
+            -e BASE_URL=http://${{ secrets.SELF_HOSTED_RUNNER_IP }}:5173
+        continue-on-error: true  # không fail pipeline nếu perf chưa đạt ngưỡng
+
+      - name: Upload K6 results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-results-${{ github.sha }}
+          path: k6-results.json
+
+  # # ============================================================
+  # # JOB 5: Cleanup — dọn dẹp sau khi pipeline xong
+  # # if: always() = chạy dù các job trên pass hay fail
+  # # ============================================================
+  cleanup:
+    name: Cleanup temporary files
+    runs-on: self-hosted
+    needs: [source-code-analysis, build-image, image-scan, push-image, deploy, dast-scan, performance-test]
+    if: always()
+
+    steps:
+      - name: Remove dangling Docker images
+        run: docker image prune -f
+
+      - name: Remove temp files
+        run: |
+          rm -f k6-results.json
+          rm -f report_html.html
