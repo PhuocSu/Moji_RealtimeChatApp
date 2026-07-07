@@ -14,7 +14,7 @@ jobs:
     name: Source Code Analysis
     runs-on: self-hosted
     permissions:
-      security-events: write
+      security-events: write #nếu ghi result vào tab Security của repo
     env:
       SONARQUBE_URL: ${{ secrets.SONAR_HOST_URL }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -93,6 +93,8 @@ jobs:
     name: Scan build Docker image 
     needs: build-image         # ← chờ build-image xong mới chạy
     runs-on: self-hosted
+    permissions:
+      security-events: write #nếu ghi result vào tab Security của repo
     steps:
       - name: Scan backend image
         uses: aquasecurity/trivy-action@master
@@ -109,7 +111,7 @@ jobs:
 
       # Upload results to GitHub Security tab
       - name: Upload backend scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-backend.sarif'
 
@@ -128,7 +130,7 @@ jobs:
 
       # Upload results to GitHub Security tab
       - name: Upload frontend scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-frontend.sarif'
   
