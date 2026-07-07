@@ -40,6 +40,9 @@ jobs:
             sudo docker start sonarqube
           fi
 
+      - name: Wait for SonarQube to be ready
+        run: sleep 15   # chờ container khởi động xong trước khi scan
+
       - name: SonarQube scan (SAST/Code quality)
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
         env:
@@ -204,9 +207,9 @@ jobs:
           cd ~/app
 
           # Ghi biến môi trường vào .env
-          echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" > .env
-          echo "IMAGE_TAG=${{ github.sha }}"                         >> .env
-          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}"              >> .env
+          echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}"              > .env
+          echo "IMAGE_TAG=${{ github.sha }}"                                       >> .env
+          echo "MONGODB_CONNECTION_STRING=${{ secrets.MONGODB_URI }}"              >> .env
 
           # Pull image mới nhất và restart container
           docker compose pull

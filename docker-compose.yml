@@ -1,10 +1,6 @@
-version: "3.9"
-
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/chatapp-backend:${IMAGE_TAG}
     container_name: backend
     ports:
       - "5001:5001"
@@ -14,13 +10,10 @@ services:
     restart: always
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/chatapp-frontend:${IMAGE_TAG}
     container_name: frontend
     ports:
       - "5173:80"
     depends_on:
       - backend
     restart: always
-    
