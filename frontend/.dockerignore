@@ -12,7 +12,6 @@ dist
 # Docker
 Dockerfile
 .dockerignore
-nginx.conf
 
 # Môi trường local
 .env
