@@ -22,6 +22,8 @@ jobs:
       PROJECT_KEY: PhuocSu_Moji_RealtimeChatApp_26ee018d-c035-4122-96a6-27550766bd7f
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,26 +31,20 @@ jobs:
           node-version: 24
 
       - name: SonarQube scan (SAST/Code quality)
-        run: |
-          # chạy container SonarQube nếu chưa có
-          if [ "$(sudo docker ps -q -f name=sonarqube)" ]; then
-            echo "SonarQube is already running."
-          else
-            echo "SonarQube is not running. Starting SonarQube..."
-            sudo docker start sonarqube
-          fi
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.PROJECT_NAME }}
 
-          # chạy sonar-scanner-cli
-          sudo docker run --rm \
-            -v $(pwd):/project \
-            --workdir="/project" \
-            sonarsource/sonar-scanner-cli sonar-scanner \
-            -Dsonar.host.url="$SONARQUBE_URL" \
-            -Dsonar.login="$SONAR_TOKEN" \
-            -Dsonar.projectKey="$PROJECT_KEY" \
-            -Dsonar.projectName="$PROJECT_NAME" \
-            -Dsonar.sources="." \
-            -Dsonar.projectVersion="V1.0.0"
+      - name: SonarQube Quality Gate check
+        uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Snyk scan (dependencies vulnerabilities)
         uses: snyk/actions/node@master
@@ -71,19 +67,7 @@ jobs:
     needs: source-code-analysis          # ← chờ source-code-analysis xong mới chạy
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      - uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - uses: actions/checkout@v4
 
       #Dùng ${{ github.sha }} giúp bạn trace được image build từ 
       #commit nào → rất hữu ích khi deploy.
