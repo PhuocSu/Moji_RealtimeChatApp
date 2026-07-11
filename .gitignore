@@ -29,5 +29,11 @@ dist-ssr
 *.sln
 *.sw?
 
-# 
+# vagrant
 .vagrant
+
+#terraform
+terraform.tfvars
+.terraform/
+*.tfstate
+*.tfstate.backup
