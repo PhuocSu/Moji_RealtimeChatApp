@@ -2,8 +2,8 @@ output "manager_public_ip" {
   value = aws_instance.swarm_manager.public_ip
 }
 
-output "worker_public_ips" {
-  value = aws_instance.swarm_worker[*].public_ip
+output "worker_private_ips" {
+  value = aws_instance.swarm_worker[*].private_ip
 }
 
 output "ssh_manager" {

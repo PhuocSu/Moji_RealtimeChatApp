@@ -35,5 +35,10 @@ dist-ssr
 #terraform
 terraform.tfvars
 .terraform/
+# Terraform state
 *.tfstate
+*.tfstate.*
 *.tfstate.backup
+*.tfstate.*.backup
+
+ip.auto.tfvars

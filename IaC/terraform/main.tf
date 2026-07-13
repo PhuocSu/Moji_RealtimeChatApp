@@ -18,10 +18,10 @@ resource "aws_key_pair" "swarm_key" {
 resource "aws_instance" "swarm_manager" {
   ami                         = var.amis[var.aws_region]
   instance_type               = var.manager_instance_type
-  subnet_id                   = aws_subnet.swarm_manager_subnet.id
+  subnet_id                   = aws_subnet.swarm_manager_subnet.id #public subnet
   availability_zone           = var.zones[0]
   key_name                    = aws_key_pair.swarm_key.key_name
-  vpc_security_group_ids      = [aws_security_group.swarm_sg.id]
+  vpc_security_group_ids      = [aws_security_group.manager_sg.id]
   associate_public_ip_address = true
 
   provisioner "remote-exec" {
@@ -70,11 +70,12 @@ resource "aws_instance" "swarm_worker" {
   count                       = 2
   ami                         = var.amis[var.aws_region]
   instance_type               = var.worker_instance_type
-  subnet_id                   = count.index == 0 ? aws_subnet.swarm_worker_subnet_1.id : aws_subnet.swarm_worker_subnet_2.id
+  # private subnet, không có public IP, SSH vào worker phải đi qua manager
+  subnet_id                   = count.index == 0 ? aws_subnet.swarm_worker_subnet_1.id : aws_subnet.swarm_worker_subnet_2.id 
   availability_zone           = var.zones[count.index + 1]
   key_name                    = aws_key_pair.swarm_key.key_name
-  vpc_security_group_ids      = [aws_security_group.swarm_sg.id]
-  associate_public_ip_address = false
+  vpc_security_group_ids      = [aws_security_group.worker_sg.id]
+  associate_public_ip_address = false # worker chỉ có private IP
 
   provisioner "remote-exec" {
     inline = [
@@ -94,7 +95,11 @@ resource "aws_instance" "swarm_worker" {
       type        = "ssh"
       user        = var.ssh_users[var.aws_region]
       private_key = file(var.pri_key_path)
-      host        = self.public_ip
+      host        = self.private_ip   
+      # worker chỉ có private IP + manager node chính là bastion host => SSH vào worker phải đi qua manager node
+      bastion_host        = aws_instance.swarm_manager.public_ip #public-ip của manager node
+      bastion_user        = var.ssh_users[var.aws_region]
+      bastion_private_key = file(var.pri_key_path)
     }
   }
 

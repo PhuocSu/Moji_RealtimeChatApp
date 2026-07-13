@@ -1,8 +1,10 @@
 # =============================================
 # Security Group
 # =============================================
-resource "aws_security_group" "swarm_sg" {
-  name        = "docker-swarm-sg"
+
+#1. Manager node
+resource "aws_security_group" "manager_sg" {
+  name        = "swarm-manager-sg"
   description = "Security group cho Docker Swarm"
   vpc_id      = aws_vpc.docker-swarm.id  # giống với VPC được tạo trong vpc.tf
 
@@ -70,6 +72,30 @@ resource "aws_security_group" "swarm_sg" {
   }
 
   tags = {
-    Name = "docker-swarm-sg"
+    Name = "swarm-manager-sg"
   }
+}
+
+#2. Worker node
+resource "aws_security_group" "worker_sg" {
+  name        = "swarm-worker-sg"
+  description = "Security group for Swarm Worker"
+  vpc_id      = aws_vpc.docker-swarm.id
+
+  ingress {
+    description     = "SSH from Manager"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.manager_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "swarm-worker-sg" }
 }
