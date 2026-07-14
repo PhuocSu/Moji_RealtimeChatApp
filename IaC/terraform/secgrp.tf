@@ -13,7 +13,9 @@ resource "aws_security_group" "manager_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.my_ip] # chỉ cho phép IP của bạn SSH vào
+    cidr_blocks = ["0.0.0.0/0"] #bất kể Ip nào trên local cũng được ssh
+    #tất nhiên, mức độ an toàn sẽ thấp => đổi lại không cần terraform apply sau mỗi lần IP thay đổi
+    #var.my_ip: chỉ cho phép IP của bạn SSH vào
   }
 
   ingress {

@@ -2,10 +2,10 @@ variable "aws_region" {
   default = "ap-southeast-1"
 }
 
-variable "my_ip" {
-  description = "IP của bạn + /32, chạy: curl ifconfig.me"
-  type        = string
-}
+# variable "my_ip" {
+#   description = "IP của bạn + /32, chạy: curl ifconfig.me"
+#   type        = string
+# }
 
 variable "pub_key_path" {
   description = "Đường dẫn tới public key - upload lên AWS"

@@ -50,6 +50,19 @@ resource "aws_instance" "swarm_manager" {
   tags = { Name = "swarm-manager", Role = "manager" }
 }
 
+#Elastic IP cho manager node, để SSH vào manager node không bị thay đổi IP public
+resource "aws_eip" "manager_eip" {
+  domain   = "vpc"
+  instance = aws_instance.swarm_manager.id
+
+  # Đảm bảo EIP gắn sau khi instance tạo xong
+  depends_on = [aws_instance.swarm_manager]
+
+  tags = {
+    Name = "swarm-manager-eip"
+  }
+}
+
 # Đoạn code này tạo một ổ EBS 10GB và gắn nó vào EC2 manager node tại /dev/xvdh.
 resource "aws_ebs_volume" "manager_vol" {
   availability_zone = var.zones[0]
@@ -97,7 +110,8 @@ resource "aws_instance" "swarm_worker" {
       private_key = file(var.pri_key_path)
       host        = self.private_ip   
       # worker chỉ có private IP + manager node chính là bastion host => SSH vào worker phải đi qua manager node
-      bastion_host        = aws_instance.swarm_manager.public_ip #public-ip của manager node
+      # bastion_host        = aws_instance.swarm_manager.public_ip #public-ip của manager node
+      bastion_host = aws_eip.manager_eip.public_ip          # ← EIP cố định
       bastion_user        = var.ssh_users[var.aws_region]
       bastion_private_key = file(var.pri_key_path)
     }
