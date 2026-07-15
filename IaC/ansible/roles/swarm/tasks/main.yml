@@ -1,0 +1,43 @@
+# ── Chạy trên manager ──────────────────────────
+# - name: Init Docker Swarm  #Terraform remote-exec đã làm  => mở comment sẽ lỗi
+#   community.docker.docker_swarm:
+#     state: present
+#     advertise_addr: "{{ ansible_default_ipv4.address }}"
+#   when: inventory_hostname in groups['managers']
+#   register: swarm_info
+
+- name: Get worker join token
+  command: docker swarm join-token worker -q
+  when: inventory_hostname in groups['managers']
+  register: worker_token
+  changed_when: false
+
+- name: Save join token to dummy host
+  add_host:
+    name: swarm_token_holder
+    token: "{{ worker_token.stdout }}"
+    manager_ip: "{{ ansible_default_ipv4.address }}"
+  when: inventory_hostname in groups['managers']
+  changed_when: false
+
+# ── Chạy trên workers ──────────────────────────
+- name: Ensure pip3 is installed
+  apt:
+    name: python3-pip
+    state: present
+    update_cache: yes
+  become: true
+  
+- name: Install Docker SDK for Python #community.docker.docker_swarm cần thư viện Python
+  pip:
+    name: docker
+    state: present
+  when: inventory_hostname in groups['workers']
+
+- name: Join Swarm as worker
+  community.docker.docker_swarm:
+    state: join
+    join_token: "{{ hostvars['swarm_token_holder']['token'] }}"
+    remote_addrs:
+      - "{{ hostvars['swarm_token_holder']['manager_ip'] }}:2377"
+  when: inventory_hostname in groups['workers']

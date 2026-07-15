@@ -1,0 +1,7 @@
+- name: Setup self-hosted GitHub Actions runner
+  hosts: self-hosted-runner
+  become: true
+
+  roles:
+    # - docker          # runner cần Docker để build image, self-hosted-runner đã có docker trước đó rồi (cài agent ở đây)
+    - github-runner

@@ -1,0 +1,7 @@
+#Chứa playbook test để kiểm tra role hoạt động đúng không.
+#SPDX-License-Identifier: MIT-0
+---
+- hosts: localhost
+  remote_user: root
+  roles:
+    - roles/docker

@@ -1,0 +1,1 @@
+#Chứa danh sách các tác vụ chính (install, config, start service). Đây là file quan trọng nhất, thường có main.yml.

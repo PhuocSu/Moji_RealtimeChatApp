@@ -1,0 +1,7 @@
+- name: Setup Jenkins server
+  hosts: jenkins
+  become: true
+
+  roles:
+    # - docker     # Jenkins cần Docker để chạy agent container, self-hosted-runner đã có docker trước đó rồi (cài agent ở đây)
+    - jenkins

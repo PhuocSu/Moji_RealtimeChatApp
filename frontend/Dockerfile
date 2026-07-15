@@ -14,11 +14,6 @@ RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtim
 # Copy toàn bộ source code
 COPY . .
 
-# Build React app thành static files (output vào thư mục /app/build)
-# Truyền VITE_API_URL hoặc REACT_APP_API_URL vào lúc build nếu cần
-ARG REACT_APP_API_URL=http://localhost:5173
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
-
 RUN npm run build
 
 # ==========================================

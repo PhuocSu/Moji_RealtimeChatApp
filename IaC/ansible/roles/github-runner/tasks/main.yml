@@ -1,0 +1,57 @@
+- name: Create runner directory
+  file:
+    path: /home/{{ ansible_user }}/actions-runner
+    state: directory
+    owner: "{{ ansible_user }}"
+
+# Kiểm tra runner đã cài chưa — dùng cho tất cả task bên dưới
+- name: Check if runner already configured
+  stat:
+    path: /home/{{ ansible_user }}/actions-runner/.runner
+  register: runner_configured # lưu kết quả vào 1 biến và sử dụng phía dưới
+
+- name: Download GitHub Actions runner
+  get_url:
+    url: "https://github.com/actions/runner/releases/download/v{{ runner_version }}/actions-runner-linux-x64-{{ runner_version }}.tar.gz"
+    dest: /home/{{ ansible_user }}/actions-runner/runner.tar.gz
+    owner: "{{ ansible_user }}"
+  when: not runner_configured.stat.exists   # ✓ chỉ tải nếu chưa có
+
+- name: Extract runner
+  unarchive:
+    src: /home/{{ ansible_user }}/actions-runner/runner.tar.gz
+    dest: /home/{{ ansible_user }}/actions-runner/
+    remote_src: true
+    owner: "{{ ansible_user }}"
+  when: not runner_configured.stat.exists
+
+- name: Configure runner
+  command: >
+    ./config.sh
+    --url https://github.com/{{ github_owner }}/{{ github_repo }}
+    --token {{ runner_token }}
+    --name {{ inventory_hostname }}
+    --unattended
+    --replace
+  args:
+    chdir: /home/{{ ansible_user }}/actions-runner
+  become_user: "{{ ansible_user }}"
+  when: not runner_configured.stat.exists
+
+# Kiểm tra service đã cài chưa
+- name: Check if runner service installed
+  stat:
+    path: /etc/systemd/system/actions.runner.*.service
+  register: runner_service
+
+- name: Install runner as service
+  command: ./svc.sh install {{ ansible_user }}
+  args:
+    chdir: /home/{{ ansible_user }}/actions-runner
+  when: not runner_service.stat.exists
+
+- name: Start runner service
+  systemd:
+    name: actions.runner.PhuocSu-Moji_RealtimeChatApp.self-hosted-runner.service
+    state: started
+    enabled: true

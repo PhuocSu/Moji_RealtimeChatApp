@@ -17,6 +17,7 @@ Dockerfile
 .env
 .env.*
 !.env.example
+!.env.production
 
 # Logs
 *.log

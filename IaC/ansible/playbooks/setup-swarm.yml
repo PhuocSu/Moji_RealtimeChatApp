@@ -1,0 +1,16 @@
+# - name: Setup Docker Swarm cluster
+#   hosts: swarm       # target cả managers + workers
+#   become: true       # chạy với sudo
+
+#   roles:
+#     - docker         # cài Docker trước
+#     - swarm          # sau đó init/join Swarm
+# => Đã lỡ cài bằng terraform Terraform remote-exec
+# manager: cài Docker ✓  +  docker swarm init ✓
+# worker: cài Docker ✓  +  docker swarm join ✗
+
+- name: Join workers to Swarm
+  hosts: swarm
+  become: true # cho phép đăng nhập với quyền root
+  roles:
+    - swarm     

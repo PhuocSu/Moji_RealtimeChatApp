@@ -6,8 +6,11 @@ services:
       - "5001:5001"
     environment:
       - NODE_ENV=production
-      - MONGO_URI=${MONGODB_CONNECTION_STRING}
-    restart: always
+      - MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}
+      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
 
   frontend:
     image: ${DOCKERHUB_USERNAME}/chatapp-frontend:${IMAGE_TAG}
@@ -16,4 +19,3 @@ services:
       - "5173:80"
     depends_on:
       - backend
-    restart: always
