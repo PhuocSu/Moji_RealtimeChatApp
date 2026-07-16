@@ -46,7 +46,7 @@
    "name": "examples/monitor-multiple-instances-agent.md",
    "ftype": "file",
    "chksum_type": "sha256",
-   "chksum_sha256": "SECRET_API",
+   "chksum_sha256": "312db8918e6f1e22bd0a6a2aefad5f5db8c0ab9bb88562c883aa047614b7b701",
    "format": 1
   },
   {
@@ -95,7 +95,7 @@
    "name": "examples/monitor-multiple-instance-otel.md",
    "ftype": "file",
    "chksum_type": "sha256",
-   "chksum_sha256": "SECRET_API",
+   "chksum_sha256": "0b655cc01142478e478cbc266f376e718b8e209e59aac98a09bcde43bda3e09d",
    "format": 1
   },
   {
