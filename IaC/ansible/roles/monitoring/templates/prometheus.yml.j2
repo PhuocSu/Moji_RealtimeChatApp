@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus tự scrape chính nó
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Scrape Node Exporter trên tất cả nodes
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+{% for host in groups['swarm'] %}
+        - '{{ hostvars[host]["ansible_host"] }}:9100'
+{% endfor %}
+        - 'localhost:9100'   # monitoring server chính nó
+
+  # Scrape Docker metrics từ Swarm manager
+  - job_name: 'docker'
+    static_configs:
+      - targets:
+{% for host in groups['managers'] %}
+        - '{{ hostvars[host]["ansible_host"] }}:9323'
+{% endfor %}

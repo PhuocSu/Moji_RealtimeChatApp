@@ -1,0 +1,62 @@
+# Cài đặt Node Exporter trên TẤT CẢ Swarm nodes (thu thập metrics)
+- name: Deploy Node Exporter on Swarm nodes
+  hosts: swarm
+  become: true
+ 
+  tasks:
+    - name: Run Node Exporter container
+      community.docker.docker_container:
+        name: node-exporter
+        image: prom/node-exporter:latest
+        state: started
+        restart_policy: always
+        network_mode: host
+        volumes:
+          - /proc:/host/proc:ro
+          - /sys:/host/sys:ro
+          - /:/rootfs:ro
+        command:
+          - '--path.procfs=/host/proc'
+          - '--path.sysfs=/host/sys'
+          - '--path.rootfs=/rootfs'
+ 
+# Cài Prometheus + Grafana trên monitoring server
+- name: Deploy Prometheus and Grafana
+  hosts: monitoring
+  become: true
+  collections:
+    - grafana.grafana
+  vars_files:
+    - ../group_vars/vault.yml
+ 
+  roles:
+    - docker        # cài Docker trước
+    - monitoring 
+    - role: grafana.grafana.grafana
+      vars:
+          grafana_ini:
+            security:
+              admin_user: admin
+              admin_password: "{{ vault_grafana_password }}"
+            server:
+              http_port: "{{ grafana_port | default(3000) }}"
+          grafana_datasources:
+            - name: Prometheus
+              type: prometheus
+              access: proxy
+              url: "http://localhost:9090"
+              isDefault: true
+    
+      
+  post_tasks:
+    - name: Wait for Grafana to be ready
+      wait_for:
+        port: 3000
+        delay: 5
+        timeout: 60
+ 
+    - name: Print access URLs
+      debug:
+        msg:
+          - "Prometheus: http://{{ ansible_host }}:9090"
+          - "Grafana:    http://{{ ansible_host }}:3000 (admin / vault_grafana_password)"

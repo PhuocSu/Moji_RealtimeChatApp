@@ -1,0 +1,17 @@
+- name: Install NFS client
+  apt:
+    name: nfs-common
+    state: present
+
+- name: Create mount point
+  file:
+    path: /mnt/nfs
+    state: directory
+
+- name: Mount NFS share
+  mount:
+    path: /mnt/nfs
+    src: "{{ hostvars[groups['nfs'][0]]['ansible_host'] }}:/mnt/nfs-share"
+    fstype: nfs
+    opts: defaults
+    state: mounted

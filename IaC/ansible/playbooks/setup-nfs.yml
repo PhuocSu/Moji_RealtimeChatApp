@@ -1,0 +1,25 @@
+# Update apt cache trước khi cài NFS
+- name: Setup NFS Server
+  hosts: nfs
+  become: true
+  roles:
+    - role: geerlingguy.nfs
+      vars:
+        nfs_exports:
+          - "/mnt/nfs-share *(rw,sync,no_subtree_check,no_root_squash)"
+
+# Mount NFS trên tất cả Swarm workers
+- name: Mount NFS on Swarm workers
+  hosts: workers
+  become: true
+  roles:
+    - nfs-client
+  post_tasks:
+    - name: Confirm NFS mount
+      command: df -h /mnt/nfs
+      changed_when: false
+      register: nfs_df
+ 
+    - name: Print mount info
+      debug:
+        msg: "{{ nfs_df.stdout }}"
