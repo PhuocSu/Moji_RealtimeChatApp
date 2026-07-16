@@ -29,9 +29,9 @@
     - name: Deploy stack
       community.docker.docker_stack:
         state: present
-        name: "mojiApp"
+        name: "{{ APP_NAME }}"
         compose:
           - /home/{{ ansible_user }}/app/docker-compose.yml
       environment:
-        DOCKERHUB_USERNAME: "{{ dockerhb_username }}"
-        MONGODB_CONNECTION_STRING: "{{ mongodb_connection_string }}"
+        DOCKERHUB_USERNAME: "{{ DOCKERHUB_USERNAME }}"
+        MONGODB_CONNECTION_STRING: "{{ MONGODB_CONNECTION_STRING }}"
