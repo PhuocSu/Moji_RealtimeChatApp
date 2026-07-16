@@ -1,5 +1,5 @@
 # =============================================
-# Security Group
+# Security Group: Swarm
 # =============================================
 
 #1. Manager node
@@ -101,3 +101,84 @@ resource "aws_security_group" "worker_sg" {
 
   tags = { Name = "swarm-worker-sg" }
 }
+
+# nfs
+resource "aws_security_group" "nfs_sg" {
+  name        = "nfs-sg"
+  description = "Security group for nfs"
+  vpc_id      = aws_vpc.docker-swarm.id
+
+  ingress {
+    description     = "SSH from Manager"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.manager_sg.id]  # chỉ cho manager SSH vào
+  }
+
+  ingress {
+    description = "NFS"
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]   # chỉ trong VPC
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "nfs-sg" }
+}
+
+# monitoring
+resource "aws_security_group" "monitoring_sg" {
+  name        = "monitoring-sg"
+  description = "Security group for monitoring"
+  vpc_id      = aws_vpc.docker-swarm.id
+
+  ingress {
+    description     = "SSH from Manager"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.manager_sg.id]
+  }
+
+  ingress {
+    description = "Prometheus"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Grafana"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Node Exporter"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]   # chỉ trong VPC
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "monitoring_sg" }
+}
+

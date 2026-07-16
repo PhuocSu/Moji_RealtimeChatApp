@@ -1,5 +1,5 @@
 # VPC chính
-resource "aws_vpc" "docker-swarm" {
+resource "aws_vpc" "docker-swarm" { #infra-vpc: đáng lẽ tên tường minh hơn => chạy lại sợ lỗi
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true 
   enable_dns_support   = true
@@ -31,7 +31,7 @@ resource "aws_subnet" "swarm_manager_subnet" {
   tags = { Name = "swarm-manager-subnet" }
 }
 
-# Private Subnet cho Worker
+# Private Subnet cho Worker, NFS, Monitoring
 resource "aws_subnet" "swarm_worker_subnet_1" {
   vpc_id            = aws_vpc.docker-swarm.id
   cidr_block        = "10.0.2.0/24"
@@ -44,6 +44,20 @@ resource "aws_subnet" "swarm_worker_subnet_2" {
   cidr_block        = "10.0.3.0/24"
   availability_zone = "ap-southeast-1c"
   tags = { Name = "swarm-worker-subnet-2" }
+}
+
+resource "aws_subnet" "nfs_subnet" {
+  vpc_id            = aws_vpc.docker-swarm.id
+  cidr_block        = "10.0.4.0/24"
+  availability_zone = "ap-southeast-1a"
+  tags = { Name = "nfs-subnet" }
+}
+
+resource "aws_subnet" "monitoring_subnet" {
+  vpc_id            = aws_vpc.docker-swarm.id
+  cidr_block        = "10.0.5.0/24"
+  availability_zone = "ap-southeast-1a"
+  tags = { Name = "monitoring-subnet" }
 }
 
 # Gắn manager subnet với public route table
@@ -74,6 +88,25 @@ resource "aws_route_table" "docker-swarm-private-rt" {
   tags = { Name = "docker-swarm-private-rt" }
 }
 
+# Route Table cho worker subnet (NFS)
+resource "aws_route_table" "nfs-private-rt" {
+  vpc_id = aws_vpc.docker-swarm.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.docker-swarm-nat.id
+  }
+  tags = { Name = "nfs-private-rt" }
+}
+# Route Table cho worker subnet
+resource "aws_route_table" "monitoring-private-rt" {
+  vpc_id = aws_vpc.docker-swarm.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.docker-swarm-nat.id
+  }
+  tags = { Name = "monitoring-private-rt" }
+}
+
 # Gắn worker subnet với private route table
 resource "aws_route_table_association" "worker_assoc1" {
   subnet_id      = aws_subnet.swarm_worker_subnet_1.id
@@ -83,3 +116,16 @@ resource "aws_route_table_association" "worker_assoc2" {
   subnet_id      = aws_subnet.swarm_worker_subnet_2.id
   route_table_id = aws_route_table.docker-swarm-private-rt.id
 }
+
+# NFS và Monitoring
+resource "aws_route_table_association" "nfs_assoc" {
+  subnet_id      = aws_subnet.nfs_subnet.id
+  route_table_id = aws_route_table.docker-swarm-private-rt.id
+}
+
+resource "aws_route_table_association" "monitoring_assoc" {
+  subnet_id      = aws_subnet.monitoring_subnet.id
+  route_table_id = aws_route_table.docker-swarm-private-rt.id
+}
+
+

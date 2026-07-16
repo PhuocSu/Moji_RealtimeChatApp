@@ -122,3 +122,72 @@ resource "aws_instance" "swarm_worker" {
     Role = "worker"
   }
 }
+
+# =============================================
+# EC2: NFS Server
+# =============================================
+resource "aws_instance" "nfs" {
+  ami                         = var.amis[var.aws_region]
+  instance_type               = "t3.micro"
+  subnet_id                   = aws_subnet.nfs_subnet.id
+  availability_zone           = var.zones[0]
+  key_name                    = aws_key_pair.swarm_key.key_name
+  vpc_security_group_ids      = [aws_security_group.nfs_sg.id]
+  associate_public_ip_address = false
+
+  provisioner "remote-exec" {
+    inline = ["sudo apt-get update -y"]
+    connection {
+      type        = "ssh"
+      user        = var.ssh_users[var.aws_region]
+      private_key = file(var.pri_key_path)
+      host        = self.private_ip
+      bastion_host = aws_eip.manager_eip.public_ip          # ← EIP cố định
+      bastion_user        = var.ssh_users[var.aws_region]
+      bastion_private_key = file(var.pri_key_path)
+    }
+  }
+
+  tags = { Name = "nfs-server", Role = "nfs" }
+}
+
+# EBS volume cho NFS storage => với NFS rất cần thiết
+resource "aws_ebs_volume" "nfs_vol" {
+  availability_zone = var.zones[0]
+  size              = 20 # Prometheus data 15 ngày ~5GB + dư => nên không cần
+  tags = { Name = "nfs-storage" }
+}
+
+resource "aws_volume_attachment" "nfs_vol_attach" {
+  device_name = "/dev/xvdh"
+  volume_id   = aws_ebs_volume.nfs_vol.id
+  instance_id = aws_instance.nfs.id
+}
+
+# =============================================
+# EC2: Monitoring (Prometheus + Grafana)
+# =============================================
+resource "aws_instance" "monitoring" {
+  ami                         = var.amis[var.aws_region]
+  instance_type               = "t3.micro"
+  subnet_id                   = aws_subnet.monitoring_subnet.id
+  availability_zone           = var.zones[0]
+  key_name                    = aws_key_pair.swarm_key.key_name
+  vpc_security_group_ids      = [aws_security_group.monitoring_sg.id]
+  associate_public_ip_address = false
+
+  provisioner "remote-exec" {
+    inline = ["sudo apt-get update -y"]
+    connection {
+      type        = "ssh"
+      user        = var.ssh_users[var.aws_region]
+      private_key = file(var.pri_key_path)
+      host        = self.private_ip
+      bastion_host = aws_eip.manager_eip.public_ip          # ← EIP cố định
+      bastion_user        = var.ssh_users[var.aws_region]
+      bastion_private_key = file(var.pri_key_path)
+    }
+  }
+
+  tags = { Name = "monitoring", Role = "monitoring" }
+}
