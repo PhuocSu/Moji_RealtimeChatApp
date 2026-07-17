@@ -66,6 +66,23 @@ resource "aws_security_group" "manager_sg" {
     cidr_blocks = ["10.0.0.0/16"]
   }
 
+  # Để dễ dàng truy cập từ local
+  ingress {
+    description = "Prometheus (proxy qua manager)"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Grafana (proxy qua manager)"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress { # outbound (traffic đi ra khỏi EC2)
     from_port   = 0
     to_port     = 0
