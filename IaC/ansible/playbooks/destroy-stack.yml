@@ -1,0 +1,40 @@
+- name: Destroy application stack from Swarm
+  hosts: managers
+  become: true
+
+  vars:
+    stack_name: "{{ app_name | default('moji-chat') }}"
+
+  tasks:
+    - name: Check if stack exists
+      command: docker stack ls --format '{{ "{{" }}.Name{{ "}}" }}'
+      register: existing_stacks
+      changed_when: false
+
+    - name: Print existing stacks
+      debug:
+        msg: "Stacks is running: {{ existing_stacks.stdout_lines }}"
+
+    - name: Remove stack
+      command: docker stack rm {{ stack_name }}
+      when: stack_name in existing_stacks.stdout
+      register: remove_result
+
+    - name: Wait for all services to stop
+      command: docker service ls --filter "label=com.docker.stack.namespace={{ stack_name }}"
+      register: remaining_services
+      until: remaining_services.stdout == ""
+      retries: 12       # thử tối đa 12 lần
+      delay: 5          # mỗi lần cách 5 giây (tổng 60s)
+      changed_when: false
+      when: stack_name in existing_stacks.stdout
+
+    - name: Stack not found
+      debug:
+        msg: "Stack '{{ stack_name }}' doesn't exist, skipping"
+      when: stack_name not in existing_stacks.stdout
+
+    - name: Confirm stack removed
+      debug:
+        msg: "Stack '{{ stack_name }}' has been removed"
+      when: stack_name in existing_stacks.stdout

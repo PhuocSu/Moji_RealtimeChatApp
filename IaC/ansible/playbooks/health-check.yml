@@ -1,0 +1,54 @@
+
+# Check NFS mount trên workers 
+- name: Check NFS mount on workers
+  hosts: workers
+  become: true
+  tasks:
+    - name: Check NFS is mounted
+      command: mountpoint -q /mnt/nfs
+      register: nfs_mount
+      ignore_errors: true
+      changed_when: false
+
+    - name: Report NFS status
+      debug:
+        msg: "{{ 'NFS mounted OK' if nfs_mount.rc == 0 else 'NFS NOT mounted' }}"
+
+    - name: Fail if NFS not mounted
+      fail:
+        msg: "NFS isn't mounted on {{ inventory_hostname }}"
+      when: nfs_mount.rc != 0
+
+# Play 2: Check Docker Swarm status trên manager
+- name: Check Swarm cluster status
+  hosts: managers
+  become: true
+  tasks:
+    - name: Check Swarm node list
+      command: docker node ls
+      register: swarm_nodes
+      changed_when: false
+
+    - name: Print Swarm nodes
+      debug:
+        msg: "{{ swarm_nodes.stdout_lines }}"
+
+    - name: Check all nodes are Ready
+      shell: docker node ls --format '{{ "{{" }}.Status{{ "}}" }}' | grep -v Ready
+      register: not_ready
+      ignore_errors: true
+      changed_when: false
+
+    - name: Fail if any node is not Ready
+      fail:
+        msg: "One of the nodes is not Ready in the Swarm cluster"
+      when: not_ready.stdout != ""
+
+    - name: Check running services
+      command: docker service ls
+      register: services
+      changed_when: false
+
+    - name: Print services
+      debug:
+        msg: "{{ services.stdout_lines }}"
