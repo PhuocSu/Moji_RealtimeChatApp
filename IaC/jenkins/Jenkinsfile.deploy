@@ -1,0 +1,36 @@
+ipeline {
+    agent any
+ 
+    environment {
+        ANSIBLE_DIR  = "${WORKSPACE}/IaC/ansible"
+        DOCKERHUB_USERNAME   = credentials('DOCKERHUB_USERNAME') // Jenkins Credentials ID => GUI
+        MONGODB_CONNECTION_STRING   = credentials('MONGODB_CONNECTION_STRING') 
+        APP_NAME   = credentials('APP_NAME') 
+    }
+ 
+    stages {
+        stage('Setup Swarm') {
+            steps {
+                sh """
+                    echo "\\n=== DEPLOY STACKS ==="
+                    cd ${ANSIBLE_DIR}
+                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+                    ansible-playbook playbooks/deploy-stack.yml \
+                    -e "DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME}" \
+                    -e "MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}" \
+                    -e "APP_NAME=${APP_NAME}"
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Deploy passed."
+        }
+        failure {
+            echo "❌ Deploy FAILED — check logs above."
+        }
+    }
+}

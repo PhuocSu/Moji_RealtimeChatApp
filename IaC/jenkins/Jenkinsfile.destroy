@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+
+    environment {
+        ANSIBLE_DIR = "${WORKSPACE}/IaC/ansible"
+    }
+
+    stages {
+        stage('Health Check') {
+            steps {
+                sh """
+                    echo "\\n=== DESTROY STACKS  ==="
+                    cd ${ANSIBLE_DIR}
+                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+                    ansible-playbook playbooks/destroy-stack.yml
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Health check passed. Starting Deploy ..."
+            build job: 'Deploy-Stack',    // tên Jenkins job tương ứng
+                  wait: true,
+                  propagate: true         // fail nếu health-check fail
+        }
+        failure {
+            echo "❌ Health check FAILED — Check logs above."
+        }
+    }
+}

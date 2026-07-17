@@ -1,0 +1,79 @@
+pipeline {
+    agent any
+ 
+    environment {
+        ANSIBLE_DIR  = "${WORKSPACE}/IaC/ansible"
+    }
+ 
+    stages {
+        stage('Setup Jenkins') {
+            steps {
+                sh """
+                    echo "\\n=== Setup Jenkins ==="
+                    cd ${ANSIBLE_DIR}
+                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+                    ansible-playbook playbooks/setup-jenkins.yml
+                """
+            }
+        }
+        stage('Setup Swarm') {
+            steps {
+                sh """
+                    echo "\\n=== Setup Docker Swarm ==="
+                    cd ${ANSIBLE_DIR}
+                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+                    ansible-playbook playbooks/setup-swarm.yml
+                """
+            }
+        }
+ 
+        stage('Setup NFS') {
+            steps {
+                sh """
+                    echo "\\n=== Setup NFS Server ==="
+                    cd ${ANSIBLE_DIR}
+                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+                    ansible-playbook playbooks/setup-nfs.yml 
+                """
+            }
+        }
+ 
+        stage('Setup Monitoring') {
+            steps {
+                sh """
+                    echo "\\n=== Setup Prometheus + Grafana + Node Exporter ==="
+                    cd ${ANSIBLE_DIR}
+                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+                    ansible-playbook playbooks/setup-monitoring.yml 
+                """
+            }
+        }
+        stage('Setup Github-runner') {
+            steps {
+                sh """
+                    echo "\\n=== Setup Github-runner ==="
+                    cd ${ANSIBLE_DIR}
+                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+                    ansible-playbook playbooks/setup-runner.yml 
+                """
+            }
+        }
+    }
+ 
+    post {
+        success {
+            echo "✅Setup VMs successfully — trigger Health Check..."
+            build job: 'Health-Check',    // tên Jenkins job tương ứng
+                  wait: true,
+                  propagate: true         // fail nếu health-check fail
+        }
+        failure {
+            echo "❌Setup FAILED — Checking log above!"
+        }
+    }
+}
