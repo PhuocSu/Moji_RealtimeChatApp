@@ -7,6 +7,10 @@ ipeline {
         MONGODB_CONNECTION_STRING   = credentials('MONGODB_CONNECTION_STRING') 
         APP_NAME   = credentials('APP_NAME') 
     }
+
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag to deploy')
+    }
  
     stages {
         stage('Setup Swarm') {
@@ -19,7 +23,13 @@ ipeline {
                     ansible-playbook playbooks/deploy-stack.yml \
                     -e "DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME}" \
                     -e "MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}" \
-                    -e "APP_NAME=${APP_NAME}"
+                    -e "APP_NAME=${APP_NAME}" \
+                    -e "ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}" \
+                    -e "CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}" \
+                    -e "CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}" \
+                    -e "CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}" \
+                    -e "IMAGE_TAG=${params.IMAGE_TAG}"
+
                 """
             }
         }

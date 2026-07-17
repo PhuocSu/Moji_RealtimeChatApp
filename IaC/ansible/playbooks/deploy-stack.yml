@@ -35,4 +35,11 @@
       environment:
         DOCKERHUB_USERNAME: "{{ DOCKERHUB_USERNAME }}"
         MONGODB_CONNECTION_STRING: "{{ MONGODB_CONNECTION_STRING }}"
+        ACCESS_TOKEN_SECRET: "{{ ACCESS_TOKEN_SECRET }}"
+        CLOUDINARY_CLOUD_NAME: "{{ CLOUDINARY_CLOUD_NAME }}"
+        CLOUDINARY_API_KEY: "{{ CLOUDINARY_API_KEY }}"
+        CLOUDINARY_API_SECRET: "{{ CLOUDINARY_API_SECRET }}"
+        # Ansible truyền IMAGE_TAG xuống stack từ Jenkinsfile
+        IMAGE_TAG: "{{ IMAGE_TAG | default('latest') }}"
+
 

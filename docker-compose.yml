@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${DOCKERHUB_USERNAME}/chatapp-backend:${IMAGE_TAG}
+    image: ${DOCKERHUB_USERNAME}/chatapp-backend:${IMAGE_TAG:-latest}
     container_name: backend
     ports:
       - "5001:5001"
@@ -13,7 +13,7 @@ services:
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
 
   frontend:
-    image: ${DOCKERHUB_USERNAME}/chatapp-frontend:${IMAGE_TAG}
+    image: ${DOCKERHUB_USERNAME}/chatapp-frontend:${IMAGE_TAG-latest}
     container_name: frontend
     ports:
       - "5173:80"

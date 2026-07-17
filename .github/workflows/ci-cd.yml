@@ -192,6 +192,17 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      # gọi Jenkins Remote API để trigger job kèm tham số IMAGE_TAG
+      - name: Trigger Jenkins deploy
+      # Jenkins có bật CSRF protection (mặc định có), cần lấy "crumb" trước khi POST
+        run: |
+          CRUMB=$(curl -s --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" \
+            "${{ secrets.JENKINS_URL }}/crumbIssuer/api/json" | jq -r '.crumb')
+          curl -X POST \
+            -H "Jenkins-Crumb:$CRUMB" \
+            "${{ secrets.JENKINS_URL }}/job/${{ secrets.JENKINS_JOB_NAME }}/buildWithParameters" \
+            --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" \
+            --data-urlencode "IMAGE_TAG=${{ github.sha }}"
   
   # # ============================================================
   # # JOB 5: SSH vào self-hosted-runner, pull image mới và restart
