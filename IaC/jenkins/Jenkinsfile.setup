@@ -1,5 +1,8 @@
 pipeline {
-    agent any
+    agent { label 'mojiChatApp-web1-node' } 
+    // Không nên để agent any. Với agent any, Jenkins sẽ chọn bất kỳ executor nào rảnh trong toàn hệ thống — nếu node Jenkins (master)
+    // cũng có ít nhất 1 executor còn trống (mặc định Jenkins master luôn có sẵn 1-2 executor trừ khi bạn tắt hẳn), nó hoàn toàn 
+    // có thể "thắng" và được chọn thay vì agent thật của bạn, đặc biệt nếu lúc đó mojiChatApp-web1-node đang bận job khác.
  
     environment {
         ANSIBLE_DIR  = "${WORKSPACE}/IaC/ansible"
