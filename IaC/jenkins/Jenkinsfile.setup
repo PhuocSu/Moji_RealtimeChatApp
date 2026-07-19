@@ -7,17 +7,17 @@ pipeline {
     }
  
     stages {
-        stage('Setup Jenkins') {
-            steps {
-                sh """
-                    echo "\\n=== Setup Jenkins ==="
-                    cd ${ANSIBLE_DIR}
-                    ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
-                    ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
-                    ansible-playbook playbooks/setup-jenkins.yml
-                """
-            }
-        }
+        // stage('Setup Jenkins') {
+        //     steps {
+        //         sh """
+        //             echo "\\n=== Setup Jenkins ==="
+        //             cd ${ANSIBLE_DIR}
+        //             ANSIBLE_CONFIG=${ANSIBLE_DIR}/ansible.cfg \
+        //             ANSIBLE_ROLES_PATH=${ANSIBLE_DIR}/roles \
+        //             ansible-playbook playbooks/setup-jenkins.yml
+        //         """
+        //     }
+        // }
         stage('Setup Swarm') {
             steps {
                 sh """
