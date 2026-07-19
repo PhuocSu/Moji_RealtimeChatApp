@@ -6,6 +6,10 @@ ipeline {
         DOCKERHUB_USERNAME   = credentials('DOCKERHUB_USERNAME') // Jenkins Credentials ID => GUI
         MONGODB_CONNECTION_STRING   = credentials('MONGODB_CONNECTION_STRING') 
         APP_NAME   = credentials('APP_NAME') 
+        ACCESS_TOKEN_SECRET = credentials('ACCESS_TOKEN_SECRET')
+        CLOUDINARY_CLOUD_NAME = credentials('CLOUDINARY_CLOUD_NAME')
+        CLOUDINARY_API_KEY = credentials('CLOUDINARY_API_KEY')
+        CLOUDINARY_API_SECRET = credentials('CLOUDINARY_API_SECRET')
     }
 
     parameters {

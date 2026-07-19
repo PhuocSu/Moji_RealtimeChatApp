@@ -3,7 +3,7 @@ pipeline {
  
     environment {
         ANSIBLE_DIR  = "${WORKSPACE}/IaC/ansible"
-        VAULT_PASS = credentials('ansible-vault-password')
+        VAULT_PASS = credentials('ANSIBLE_VAULT_PASSWORD')
     }
  
     stages {
