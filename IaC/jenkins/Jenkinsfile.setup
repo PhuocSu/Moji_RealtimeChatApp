@@ -75,6 +75,9 @@ pipeline {
             build job: 'Health-Check',    // tên Jenkins job tương ứng
                   wait: true,
                   propagate: true         // fail nếu health-check fail
+                  parameters: [
+                 string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
+             ]
         }
         failure {
             echo "❌Setup FAILED — Checking log above!"

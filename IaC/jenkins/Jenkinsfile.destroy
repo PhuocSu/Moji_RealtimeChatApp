@@ -21,13 +21,13 @@ pipeline {
 
     post {
         success {
-            echo "✅ Health check passed. Starting Deploy ..."
+            echo "✅ Destroy passed. Starting Deploy ..."
             build job: 'Deploy-Stack',    // tên Jenkins job tương ứng
                   wait: true,
                   propagate: true         // fail nếu health-check fail
         }
         failure {
-            echo "❌ Health check FAILED — Check logs above."
+            echo "❌ Destroy FAILED — Check logs above."
         }
     }
 }
