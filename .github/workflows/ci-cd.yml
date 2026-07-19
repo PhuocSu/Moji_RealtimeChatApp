@@ -318,6 +318,6 @@ jobs:
             "${{ secrets.JENKINS_URL }}/crumbIssuer/api/json" | jq -r '.crumb')
           curl -X POST \
             -H "Jenkins-Crumb:$CRUMB" \
-            "${{ secrets.JENKINS_URL }}/job/${{ secrets.JENKINS_JOB_NAME }}/buildWithParameters" \
+            "${{ secrets.JENKINS_URL }}/job/Moji_RealtimeChatApp-IaC/job/${{ secrets.JENKINS_JOB_NAME }}/buildWithParameters" \
             --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" \
             --data-urlencode "IMAGE_TAG=${{ github.sha }}"
