@@ -74,7 +74,7 @@ pipeline {
             echo "✅Setup VMs successfully — trigger Health Check..."
             build job: 'Health-Check',    // tên Jenkins job tương ứng
                   wait: true,
-                  propagate: true         // fail nếu health-check fail
+                  propagate: true,         // fail nếu health-check fail
                   parameters: [
                  string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
              ]
