@@ -41,7 +41,7 @@
 # Kiểm tra service đã cài chưa
 - name: Check if runner service installed
   stat:
-    path: /etc/systemd/system/actions.runner.*.service
+    path: /etc/systemd/system/actions.runner.PhuocSu-Moji_RealtimeChatApp.self-hosted-runner.service
   register: runner_service
 
 - name: Install runner as service
