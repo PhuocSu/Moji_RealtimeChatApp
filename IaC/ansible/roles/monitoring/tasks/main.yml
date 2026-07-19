@@ -1,17 +1,38 @@
-# Prometheus + Node Exporter
-- name: Create Prometheus config directory
+# ── Tạo thư mục config ───────────────────────────────────
+- name: Create config directories
   file:
-    path: /etc/prometheus
+    path: "{{ item }}"
     state: directory
     mode: "0755"
+  loop:
+    - /etc/prometheus
+    - /etc/alertmanager
+    - /etc/alertmanager/templates
  
+# ── Copy config files ─────────────────────────────────────
 - name: Copy Prometheus config
   template:
     src: prometheus.yml.j2
     dest: /etc/prometheus/prometheus.yml
     mode: "0644"
+  notify: Restart Prometheus   # restart khi config thay đổi
  
-- name: Run Prometheus container
+- name: Copy Alert Rules
+  template:
+    src: alert.rules.yml.j2
+    dest: /etc/prometheus/alert.rules.yml
+    mode: "0644"
+  notify: Restart Prometheus
+ 
+- name: Copy AlertManager config
+  template:
+    src: alertmanager.yml.j2
+    dest: /etc/alertmanager/alertmanager.yml
+    mode: "0644"
+  notify: Restart AlertManager
+ 
+# ── Deploy containers ─────────────────────────────────────
+- name: Run Prometheus
   community.docker.docker_container:
     name: prometheus
     image: prom/prometheus:latest
@@ -21,11 +42,26 @@
       - "9090:9090"
     volumes:
       - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /etc/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.retention.time=15d'
  
-- name: Run Node Exporter on monitoring server
+- name: Run AlertManager
+  community.docker.docker_container:
+    name: alertmanager
+    image: prom/alertmanager:latest
+    state: started
+    restart_policy: always
+    ports:
+      - "9093:9093"
+    volumes:
+      - /etc/alertmanager:/etc/alertmanager:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+ 
+- name: Run Node Exporter
   community.docker.docker_container:
     name: node-exporter
     image: prom/node-exporter:latest
@@ -40,4 +76,3 @@
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
- 

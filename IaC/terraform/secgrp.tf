@@ -189,6 +189,14 @@ resource "aws_security_group" "monitoring_sg" {
     cidr_blocks = ["10.0.0.0/16"]   # chỉ trong VPC
   }
 
+  ingress {
+    description = "AlertManager"
+    from_port   = 9093
+    to_port     = 9093
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"] 
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

@@ -1,3 +1,11 @@
-#SPDX-License-Identifier: MIT-0
----
-# handlers file for roles/monitoring
+- name: Restart Prometheus
+  community.docker.docker_container:
+    name: prometheus
+    state: started
+    restart: true
+
+- name: Restart AlertManager
+  community.docker.docker_container:
+    name: alertmanager
+    state: started
+    restart: true

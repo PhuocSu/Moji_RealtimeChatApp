@@ -38,7 +38,7 @@
             security:
               admin_user: admin
               admin_password: "{{ vault_grafana_password }}"
-              csrf_trusted_origins: "52.77.11.219:3000"
+              csrf_trusted_origins: "52.77.11.219:3000" #Điều chỉnh 
             server:
               http_port: "{{ grafana_port | default(3000) }}"
           grafana_datasources:

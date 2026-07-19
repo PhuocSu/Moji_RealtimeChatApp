@@ -1,0 +1,76 @@
+groups:
+  - name: infrastructure
+    rules:
+      - alert: NodeDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{% raw %}Node {{ $labels.instance }} down{% endraw %}"
+          description: "{% raw %}Node {{ $labels.instance }} không respond trong hơn 1 phút.{% endraw %}"
+
+      - alert: HighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{% raw %}CPU cao trên {{ $labels.instance }}{% endraw %}"
+          description: "{% raw %}CPU đang ở {{ $value | printf \"%.1f\" }}% trong hơn 5 phút.{% endraw %}"
+
+      - alert: HighCPUCritical
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{% raw %}CPU CỰC CAO trên {{ $labels.instance }}{% endraw %}"
+          description: "{% raw %}CPU đang ở {{ $value | printf \"%.1f\" }}% — cần xử lý ngay.{% endraw %}"
+
+      - alert: HighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{% raw %}RAM cao trên {{ $labels.instance }}{% endraw %}"
+          description: "{% raw %}RAM đang dùng {{ $value | printf \"%.1f\" }}%.{% endraw %}"
+
+      - alert: DiskAlmostFull
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{% raw %}Disk gần đầy trên {{ $labels.instance }}{% endraw %}"
+          description: "{% raw %}Disk {{ $labels.mountpoint }} đang dùng {{ $value | printf \"%.1f\" }}%.{% endraw %}"
+
+      - alert: DiskFull
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes)) * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{% raw %}Disk gần đầy HOÀN TOÀN trên {{ $labels.instance }}{% endraw %}"
+          description: "{% raw %}Disk {{ $labels.mountpoint }} còn lại {{ $value | printf \"%.1f\" }}%.{% endraw %}"
+
+  - name: docker
+    rules:
+      - alert: ContainerDown
+        expr: absent(container_last_seen{name=~".+"})
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container bị down"
+          description: "Không thấy container nào đang chạy trên cluster."
+
+      - alert: ContainerHighMemory
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{% raw %}Container {{ $labels.name }} dùng nhiều RAM{% endraw %}"
+          description: "{% raw %}Container đang dùng {{ $value | printf \"%.1f\" }}% memory limit.{% endraw %}"
