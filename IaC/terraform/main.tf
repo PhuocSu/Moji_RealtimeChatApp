@@ -67,6 +67,7 @@ resource "aws_eip" "manager_eip" {
 resource "aws_ebs_volume" "manager_vol" {
   availability_zone = var.zones[0]
   size              = 10
+  encrypted = true
   tags = { Name = "swarm-manager-vol" }
 }
 
@@ -155,6 +156,7 @@ resource "aws_instance" "nfs" {
 resource "aws_ebs_volume" "nfs_vol" {
   availability_zone = var.zones[0]
   size              = 20 # Prometheus data 15 ngày ~5GB + dư => nên không cần
+  encrypted = true
   tags = { Name = "nfs-storage" }
 }
 

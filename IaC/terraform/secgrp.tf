@@ -13,7 +13,7 @@ resource "aws_security_group" "manager_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] #bất kể Ip nào trên local cũng được ssh
+    cidr_blocks = ["42.117.110.206/32"] #0.0.0.0/0: bất kể Ip nào trên local cũng được ssh, quality gate báo lỗi => modem người khác nên không để ip tĩnh được
     #tất nhiên, mức độ an toàn sẽ thấp => đổi lại không cần terraform apply sau mỗi lần IP thay đổi
     #var.my_ip: chỉ cho phép IP của bạn SSH vào
   }
