@@ -52,6 +52,8 @@ jobs:
           args: >
             -Dsonar.projectKey=${{ env.PROJECT_KEY }}
             -Dsonar.projectName=${{ env.PROJECT_NAME }}
+            -Dsonar.python.version=3.10
+            -Dsonar.exclusions=IaC/ansible/collections/**/*
 
       - name: SonarQube Quality Gate check
         uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
