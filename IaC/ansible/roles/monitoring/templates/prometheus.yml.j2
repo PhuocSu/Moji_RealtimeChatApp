@@ -7,7 +7,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - 'localhost:9093'
+            - '{{ ansible_default_ipv4.address }}:9093'
 # Load alert rules
 rule_files:
   - '/etc/prometheus/alert.rules.yml'
@@ -23,19 +23,20 @@ scrape_configs:
     static_configs:
       - targets:
 {% for host in groups['swarm'] %}
-        - '{{ hostvars[host]["ansible_host"] }}:9100'
+        - '{{ hostvars[host]["ansible_default_ipv4"]["address"] }}:9100'
 {% endfor %}
-        - 'localhost:9100'   # monitoring server chính nó
+        - '{{ ansible_default_ipv4.address }}:9100'   # monitoring server chính nó
 
   # Scrape Docker metrics từ Swarm manager
   - job_name: 'docker'
     static_configs:
       - targets:
 {% for host in groups['managers'] %}
-        - '{{ hostvars[host]["ansible_host"] }}:9323'
+        - '{{ hostvars[host]["ansible_default_ipv4"]["address"] }}:9323'
 {% endfor %}
 
 # Scrape AlertManager để monitor chính nó
   - job_name: 'alertmanager'
     static_configs:
-      - targets: ['localhost:9093']
+      - targets: 
+          - '{{ ansible_default_ipv4.address }}:9093'

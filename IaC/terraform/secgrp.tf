@@ -83,6 +83,24 @@ resource "aws_security_group" "manager_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Thêm mới — dùng cidr_blocks thay security_groups để tránh cycle
+  ingress {
+    description = "Node Exporter from monitoring"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.5.0/24"] # monitoring subnet (chung)
+  }
+
+  ingress {
+    description = "Docker metrics from monitoring"
+    from_port   = 9323
+    to_port     = 9323
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.5.0/24"] # monitoring subnet
+  }
+
+
   egress { # outbound (traffic đi ra khỏi EC2)
     from_port   = 0
     to_port     = 0
@@ -108,6 +126,15 @@ resource "aws_security_group" "worker_sg" {
     protocol        = "tcp"
     security_groups = [aws_security_group.manager_sg.id]
   }
+
+  ingress {
+    description = "Node Exporter from monitoring"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.5.0/24"] # monitoring subnet
+  }
+
 
   egress {
     from_port   = 0
