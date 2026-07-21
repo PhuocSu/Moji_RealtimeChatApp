@@ -1,7 +1,8 @@
+version: "3.8"
+
 services:
   backend:
     image: ${DOCKERHUB_USERNAME}/chatapp-backend:${IMAGE_TAG:-latest}
-    container_name: backend
     ports:
       - "5001:5001"
     environment:
@@ -11,11 +12,28 @@ services:
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    networks:
+      - app_net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
 
   frontend:
-    image: ${DOCKERHUB_USERNAME}/chatapp-frontend:${IMAGE_TAG-latest}
-    container_name: frontend
+    image: ${DOCKERHUB_USERNAME}/chatapp-frontend:${IMAGE_TAG:-latest}
     ports:
       - "5173:80"
-    depends_on:
-      - backend
+    networks:
+      - app_net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s       # chờ backend lên trước
+        max_attempts: 3
+
+networks:
+  app_net:
+    driver: overlay
