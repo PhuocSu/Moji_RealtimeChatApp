@@ -35,7 +35,7 @@ USER nodeuser
 EXPOSE 5001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=25s --retries=3 \
   CMD wget -qO- http://localhost:5001/health || exit 1
 
 # Khởi động app (JS thuần)

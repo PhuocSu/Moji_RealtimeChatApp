@@ -31,6 +31,11 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Healthcheck endpoint
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // swagger
 const swaggerDocument = JSON.parse(fs.readFileSync("./src/swagger.json", "utf8"));
 
