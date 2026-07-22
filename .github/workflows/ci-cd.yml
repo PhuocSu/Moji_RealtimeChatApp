@@ -175,6 +175,16 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
 
+      # Tạo file .env.production cho frontend ngay trước khi build
+      # (.env.production bị .gitignore chặn nên không nằm trong repo,
+      # phải sinh ra ở đây trước khi vite build đọc nó)
+      - name: Create .env.production for frontend
+        run: |
+          cat <<EOF > ./frontend/.env.production
+          VITE_API_URL=/api
+          VITE_SOCKET_URL=/
+          EOF
+
       - name: Build & push frontend
         uses: docker/build-push-action@v5
         with:
@@ -186,8 +196,6 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/chatapp-frontend:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to:   type=local,dest=/tmp/.buildx-cache-new,mode=max
-          build-args: |
-            REACT_APP_API_URL=http://${{ secrets.SELF_HOSTED_RUNNER_IP }}:5001
 
       # Rotate cache (tránh cache phình to theo thời gian)
       - name: Rotate Docker build cache

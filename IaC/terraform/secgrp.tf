@@ -43,6 +43,17 @@ resource "aws_security_group" "manager_sg" {
   }
 
   ingress {
+    description = "Frontend (Swarm published port)"
+    from_port   = 5173
+    to_port     = 5173
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  } #Open port 5173 trên manager EC2 để truy cập từ local: điều kiện
+    # manager node: đã có 7946 (TCP+UDP), 4789 (UDP), 2377 (TCP)
+    # worker node: đã có 7946 (TCP+UDP), 4789 (UDP)
+    # dù frontend ở worker hay manager vẫn truy cập được => url: http://52.77.11.219:5173
+
+  ingress {
     description = "Swarm node TCP"
     from_port   = 7946 # bắt buộc cho communication giữa các node (TCP)
     to_port     = 7946
@@ -133,6 +144,27 @@ resource "aws_security_group" "worker_sg" {
     to_port     = 9100
     protocol    = "tcp"
     cidr_blocks = ["10.0.5.0/24"] # monitoring subnet
+  }
+  ingress {
+    description = "Swarm node TCP"
+    from_port   = 7946
+    to_port     = 7946
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+  ingress {
+    description = "Swarm node UDP"
+    from_port   = 7946
+    to_port     = 7946
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+  ingress {
+    description = "Swarm overlay"
+    from_port   = 4789
+    to_port     = 4789
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
 
