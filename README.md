@@ -1,6 +1,22 @@
 ## Overview
 MojiChatApp (fork) is a project that demonstrates the application of DevSecOps and Infrastructure as Code in modern software development workflows. Instead of focusing on building chat features, this fork emphasizes designing automated CI/CD pipelines, integrating security testing, and managing infrastructure with tools such as Terraform and Docker Swarm. The goal is to create a secure, scalable, and efficient deployment environment, showcasing how DevSecOps and IaC can enhance quality and operational effectiveness for any application.
 
+## Web Development Technologies & Deployment Technologies
+![Express.js](https://img.shields.io/badge/Express.js-008000?logo=express&logoColor=white&style=for-the-badge)
+![React.js](https://img.shields.io/badge/React.js-61DAFB?logo=react&logoColor=black&style=for-the-badge)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white&style=for-the-badge)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white&style=for-the-badge)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white&style=for-the-badge)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white&style=for-the-badge)
+
+## Infrastructure Technologies & Automation Technologies
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?logo=terraform&logoColor=white&style=for-the-badge)
+![Ansible](https://img.shields.io/badge/Ansible-EE0000?logo=ansible&logoColor=white&style=for-the-badge)
+![Vagrant](https://img.shields.io/badge/Vagrant-1563FF?logo=vagrant&logoColor=white&style=for-the-badge)
+![Jenkins](https://img.shields.io/badge/Jenkins-D24939?logo=jenkins&logoColor=white&style=for-the-badge)
+![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white&style=for-the-badge)
+
+
 ## 🏛️Interface
 ![alt text](assets/screenshots/README-${unique}-1.png)
 ![alt text](assets/screenshots/README-${unique}-2.png)
@@ -8,20 +24,22 @@ MojiChatApp (fork) is a project that demonstrates the application of DevSecOps a
 
 ## 🏛️Infrastructure Architecture
 - Development Architecture
-![alt text](assets/screenshots/README-${unique}-4.png)
+![alt text](assets/screenshots/MojiChatApp-DevSecOps&IaC.drawio.svg)
 ### Virtual Machine Specifications
-- Coming-soon
+![alt text](assets/screenshots/README-${unique}-4.png)
+### Pipeline Jobs Specifications
+![alt text](assets/screenshots/README-${unique}-21.png)
 ## Pipelines
 ### Jenkins jobs
 ![alt text](assets/screenshots/README-${unique}-5.png)
 #### Deploy-stack
-![alt text](assets/screenshots/README-${unique}-6.png)
+![alt text](assets/screenshots/README-${unique}-20.png)
 #### Destroy-stack
 ![alt text](assets/screenshots/README-${unique}-7.png)
 #### Health-check
-![alt text](assets/screenshots/README-${unique}-8.png)
+![alt text](assets/screenshots/README-${unique}-19.png)
 #### Setup VMs
-![alt text](assets/screenshots/README-${unique}-9.png)
+![alt text](assets/screenshots/README-${unique}-18.png)
 ### Github Action jobs
 ![alt text](assets/screenshots/README-${unique}-10.png)
 - With Code Quality scan, we can see in own sonarqube UI.
