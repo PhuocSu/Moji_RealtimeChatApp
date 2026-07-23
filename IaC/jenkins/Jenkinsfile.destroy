@@ -6,7 +6,7 @@ pipeline {
     }
 
     stages {
-        stage('Health Check') {
+        stage('Destroy stacks') {
             steps {
                 sh """
                     echo "\\n=== DESTROY STACKS  ==="

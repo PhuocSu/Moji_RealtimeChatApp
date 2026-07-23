@@ -17,7 +17,7 @@ pipeline {
     }
  
     stages {
-        stage('Setup Swarm') {
+        stage('Deploy Stacks') {
             steps {
                 sh """
                     echo "\\n=== DEPLOY STACKS ==="

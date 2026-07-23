@@ -21,7 +21,7 @@ pipeline {
         //         """
         //     }
         // }
-        stage('Setup Swarm') {
+        stage('Setup VMs') {
             steps {
                 sh """
                     echo "\\n=== Setup Docker Swarm ==="
